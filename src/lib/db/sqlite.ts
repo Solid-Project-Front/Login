@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 export interface User {
   id: number;
   username: string;
+  email: string;
   password: string;
   createdAt: Date;
 }
@@ -17,8 +18,9 @@ export type NewUser = Omit<User, 'id' | 'createdAt'>;
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().unique(),
+  email: text('email').notNull().unique(),
   password: text('password').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(new Date()),
+  createdAt: text('created_at').notNull().default("datetime('now')"),
 });
 
 // Clase principal de la base de datos SQLite
@@ -26,11 +28,13 @@ export class SQLiteDatabase {
   private static instance: SQLiteDatabase;
   private db: ReturnType<typeof drizzle>;
   private sqlite: Database.Database;
+  
   // Constructor privado - no permite crear instancias directamente
   private constructor() {
     this.sqlite = new Database('sqlite.db');
     this.db = drizzle(this.sqlite);
   }
+  
   // Método público para obtener la instancia
   public static getInstance(): SQLiteDatabase {
     if (!SQLiteDatabase.instance) {
@@ -55,7 +59,18 @@ export class SQLiteDatabase {
 
   public async findUserByUsername(username: string): Promise<User | null> {
     try {
-      return this.db.select().from(users).where(eq(users.username, username)).get() || null;
+      const row = this.db.select().from(users).where(eq(users.username, username)).get();
+      return row ? { ...row, createdAt: new Date(row.createdAt) } : null;
+    } catch (error) {
+      console.error('Error finding user:', error);
+      throw new Error('Could not find user');
+    }
+  }
+
+  public async findUserByEmail(email: string): Promise<User | null> {
+    try {
+      const row = this.db.select().from(users).where(eq(users.email, email)).get();
+      return row ? { ...row, createdAt: new Date(row.createdAt) } : null;
     } catch (error) {
       console.error('Error finding user:', error);
       throw new Error('Could not find user');
@@ -64,7 +79,8 @@ export class SQLiteDatabase {
 
   public async findUserById(id: number): Promise<User | null> {
     try {
-      return this.db.select().from(users).where(eq(users.id, id)).get() || null;
+      const row = this.db.select().from(users).where(eq(users.id, id)).get();
+      return row ? { ...row, createdAt: new Date(row.createdAt) } : null;
     } catch (error) {
       console.error('Error finding user:', error);
       throw new Error('Could not find user');
@@ -73,7 +89,8 @@ export class SQLiteDatabase {
 
   public async getAllUsers(): Promise<User[]> {
     try {
-      return this.db.select().from(users).all();
+      const rows = this.db.select().from(users).all();
+      return rows.map(row => ({ ...row, createdAt: new Date(row.createdAt) }));
     } catch (error) {
       console.error('Error finding users:', error);
       throw new Error('Could not find users');
@@ -106,4 +123,4 @@ export class SQLiteDatabase {
   public close(): void {
     this.sqlite.close();
   }
-} 
+}

@@ -6,12 +6,14 @@ const sqliteDb = SQLiteDatabase.getInstance();
 // Interfaz pública de la base de datos
 export const db = {
   user: {
-    async create({ data }: { data: { username: string; password: string } }) {
+    async create({ data }: { data: { username: string; email: string; password: string } }) {
       return sqliteDb.createUser(data);
     },
-    async findUnique({ where }: { where: { username?: string; id?: number } }) {
+    async findUnique({ where }: { where: { username?: string; email?: string; id?: number } }) {
       if (where.username) {
         return sqliteDb.findUserByUsername(where.username);
+      } else if (where.email) {
+        return sqliteDb.findUserByEmail(where.email);
       } else if (where.id) {
         return sqliteDb.findUserById(where.id);
       }
@@ -20,11 +22,11 @@ export const db = {
     async findAll() {
       return sqliteDb.getAllUsers();
     },
-    async update(id: number, data: Partial<{ username: string; password: string }>) {
+    async update(id: number, data: Partial<{ username: string; email: string; password: string }>) {
       return sqliteDb.updateUser(id, data);
     },
     async delete(id: number) {
       return sqliteDb.deleteUser(id);
     }
   }
-}; 
+};

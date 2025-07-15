@@ -2,11 +2,12 @@ import {
   useSubmission,
   type RouteSectionProps
 } from "@solidjs/router";
-import { Show } from "solid-js";
+import { Show, createSignal } from "solid-js";
 import { loginOrRegister } from "~/lib";
 
 export default function Login(props: RouteSectionProps) {
   const loggingIn = useSubmission(loginOrRegister);
+  const [loginType, setLoginType] = createSignal("login");
 
   return (
     <main>
@@ -16,10 +17,22 @@ export default function Login(props: RouteSectionProps) {
         <fieldset disabled={loggingIn.pending}>
           <legend>¿Iniciar sesión o registrarse?</legend>
           <label>
-            <input type="radio" name="loginType" value="login" checked={true} /> Iniciar sesión
+            <input 
+              type="radio" 
+              name="loginType" 
+              value="login" 
+              checked={loginType() === "login"}
+              onChange={() => setLoginType("login")}
+            /> Iniciar sesión
           </label>
           <label>
-            <input type="radio" name="loginType" value="register" /> Registrarse
+            <input 
+              type="radio" 
+              name="loginType" 
+              value="register" 
+              checked={loginType() === "register"}
+              onChange={() => setLoginType("register")}
+            /> Registrarse
           </label>
         </fieldset>
         <div>
@@ -33,6 +46,19 @@ export default function Login(props: RouteSectionProps) {
             disabled={loggingIn.pending}
           />
         </div>
+        <Show when={loginType() === "register"}>
+          <div>
+            <label for="email">Email</label>
+            <input 
+              id="email"
+              name="email" 
+              type="email"
+              placeholder="Ingresa tu email" 
+              required
+              disabled={loggingIn.pending}
+            />
+          </div>
+        </Show>
         <div>
           <label for="password">Contraseña</label>
           <input 
@@ -45,7 +71,7 @@ export default function Login(props: RouteSectionProps) {
           />
         </div>
         <button type="submit" class="login-button" disabled={loggingIn.pending}>
-          {loggingIn.pending ? "Procesando..." : "Iniciar sesión"}
+          {loggingIn.pending ? "Procesando..." : (loginType() === "login" ? "Iniciar sesión" : "Registrarse")}
         </button>
         <Show when={loggingIn.result}>
           <p role="alert" id="error-message" class={loggingIn.result instanceof Error ? "error" : ""}>

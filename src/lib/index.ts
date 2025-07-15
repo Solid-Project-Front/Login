@@ -6,9 +6,10 @@ import {
   logout as logoutSession,
   register,
   validatePassword,
-  validateUsername
+  validateUsername,
+  validateEmail
 } from "./server";
-// Importa las funciones de validación de usuario y contraseña
+
 export const getUser = query(async (_, { request }) => {
   "use server";
   try {
@@ -22,7 +23,7 @@ export const getUser = query(async (_, { request }) => {
       await logoutSession();
       return redirect("/login");
     }
-    return { id: user.id, username: user.username };
+    return { id: user.id, username: user.username, email: user.email };
   } catch (error) {
     console.error("Error getting user:", error);
     await logoutSession();
@@ -34,13 +35,18 @@ export const loginOrRegister = action(async (formData: FormData) => {
   "use server";
   try {
     const username = String(formData.get("username"));
+    const email = String(formData.get("email"));
     const password = String(formData.get("password"));
     const loginType = String(formData.get("loginType"));
+    
     let error = validateUsername(username) || validatePassword(password);
+    if (loginType === "register") {
+      error = error || validateEmail(email);
+    }
     if (error) return new Error(error);
 
     const user = await (loginType !== "login"
-      ? register(username, password)
+      ? register(username, email, password)
       : login(username, password));
     
     const session = await getSession();

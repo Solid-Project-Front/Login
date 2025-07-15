@@ -11,15 +11,26 @@ export function validateUsername(username: unknown) {
   }
 }
 
+export function validateEmail(email: unknown) {
+  if (typeof email !== "string" || !email.includes('@')) {
+    return `Please enter a valid email address`;
+  }
+}
+
 export function validatePassword(password: unknown) {
   if (typeof password !== "string" || password.length < 6) {
     return `Passwords must be at least 6 characters long`;
   }
 }
 
-export async function login(username: string, password: string) {
+export async function login(identifier: string, password: string) {
   try {
-    const user = await db.user.findUnique({ where: { username } });
+    let user;
+    if (identifier.includes("@")) {
+      user = await db.user.findUnique({ where: { email: identifier } });
+    } else {
+      user = await db.user.findUnique({ where: { username: identifier } });
+    }
     if (!user || !(await verifyPassword(password, user.password))) {
       throw new Error("Invalid login");
     }
@@ -41,14 +52,19 @@ export async function logout() {
   }
 }
 
-export async function register(username: string, password: string) {
+export async function register(username: string, email: string, password: string) {
   try {
     const existingUser = await db.user.findUnique({ where: { username } });
-    if (existingUser) throw new Error("User already exists");
+    if (existingUser) throw new Error("Username already exists");
+    
+    const existingEmail = await db.user.findUnique({ where: { email } });
+    if (existingEmail) throw new Error("Email already exists");
+    
     const hashedPassword = await hashPassword(password);
     return db.user.create({
       data: {
         username,
+        email,
         password: hashedPassword
       }
     });
