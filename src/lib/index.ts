@@ -7,7 +7,9 @@ import {
   register,
   validatePassword,
   validateUsername,
-  validateEmail
+  validateEmail,
+  requestPasswordReset,
+  resetPassword
 } from "./server";
 
 export const getUser = query(async (_, { request }) => {
@@ -45,15 +47,16 @@ export const loginOrRegister = action(async (formData: FormData) => {
     }
     if (error) return new Error(error);
 
-    const user = await (loginType !== "login"
+    const user = await (loginType === "register"
       ? register(username, email, password)
       : login(username, password));
     
     const session = await getSession();
-    await session.update(d => {
-      d.userId = user.id;
-      d.username = user.username;
-      d.lastLogin = new Date().toISOString();
+    await session.update((data) => {
+      data.userId = user.id;
+      data.username = user.username;
+      data.lastLogin = new Date().toISOString();
+      return data;
     });
 
     const redirectTo = formData.get("redirectTo")?.toString() || "/";
@@ -72,5 +75,41 @@ export const logout = action(async () => {
   } catch (error) {
     console.error("Error during logout:", error);
     return new Error("Error al cerrar sesión");
+  }
+});
+
+export const forgotPassword = action(async (formData: FormData) => {
+  "use server";
+  try {
+    const email = String(formData.get("email"));
+    
+    const emailError = validateEmail(email);
+    if (emailError) return new Error(emailError);
+
+    const result = await requestPasswordReset(email);
+    return result;
+  } catch (error) {
+    console.error("Error in forgotPassword:", error);
+    return error instanceof Error ? error : new Error("Error al procesar la solicitud");
+  }
+});
+
+export const resetPasswordAction = action(async (formData: FormData) => {
+  "use server";
+  try {
+    const token = String(formData.get("token"));
+    const password = String(formData.get("password"));
+    
+    const passwordError = validatePassword(password);
+    if (passwordError) return new Error(passwordError);
+
+    const result = await resetPassword(token, password);
+    if (result.success) {
+      return redirect("/login?message=password-reset-success");
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in resetPassword:", error);
+    return error instanceof Error ? error : new Error("Error al restablecer la contraseña");
   }
 });

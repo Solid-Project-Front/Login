@@ -27,6 +27,18 @@ export const db = {
     },
     async delete(id: number) {
       return sqliteDb.deleteUser(id);
+    },
+    async setResetToken(email: string, token: string, expiry: Date) {
+      return sqliteDb.setResetToken(email, token, expiry);
+    },
+    async findByResetToken(token: string) {
+      return sqliteDb.findUserByResetToken(token);
+    },
+    async clearResetToken(userId: number) {
+      return sqliteDb.clearResetToken(userId);
+    },
+    async updatePassword(userId: number, newPassword: string) {
+      return sqliteDb.updatePassword(userId, newPassword);
     }
   }
 };

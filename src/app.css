@@ -1,5 +1,6 @@
 body {
-  font-family: Gordita, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: Gordita, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
   background-color: #f5f7fa;
   margin: 0;
   padding: 0;
@@ -269,6 +270,402 @@ p[role="alert"] {
   border: 1px solid #fc8181;
   color: #c53030;
   font-size: 0.9rem;
+}
+
+.forgot-password-link {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.forgot-password-link a {
+  color: #0088cc;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.forgot-password-link a:hover {
+  color: #006699;
+  text-decoration: underline;
+}
+
+/* Estilos para páginas de recuperación de contraseña */
+.forgot-password-container,
+.reset-password-container {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+  box-sizing: border-box;
+  animation: slideUp 0.5s ease-out;
+}
+
+.forgot-password-header,
+.reset-password-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.forgot-password-header h1,
+.reset-password-header h1 {
+  color: #0088cc;
+  font-size: 1.8rem;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.forgot-password-header .subtitle,
+.reset-password-header .subtitle {
+  color: #4a5568;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.forgot-password-form,
+.reset-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.submit-button {
+  background: linear-gradient(45deg, #0088cc, #00a8ff);
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: linear-gradient(45deg, #006699, #0088cc);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.back-to-login {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.back-link {
+  color: #0088cc;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: #006699;
+  text-decoration: underline;
+}
+
+.success-message {
+  text-align: center;
+  padding: 2rem;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(45deg, #10b981, #34d399);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+  margin: 0 auto 1.5rem;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-message h2 {
+  color: #10b981;
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.success-message p {
+  color: #4a5568;
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.error-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(45deg, #ef4444, #f87171);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+  margin: 0 auto 1.5rem;
+}
+
+.error-container h2 {
+  color: #ef4444;
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.error-container p {
+  color: #4a5568;
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.error-message {
+  margin: 1rem 0 0 0;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  color: #c53030;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Estilos para el enlace de desarrollo */
+.development-link {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 2rem 0;
+  text-align: center;
+  border: 2px solid #f59e0b;
+}
+
+.development-link h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: white;
+}
+
+.development-link p {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.development-button {
+  display: inline-block;
+  background: white;
+  color: #f59e0b;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  border: 2px solid white;
+}
+
+.development-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.success-banner {
+  background: linear-gradient(45deg, #10b981, #34d399);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-banner .success-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.success-banner p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Estilos para componentes de validación */
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-label {
+  display: block;
+  text-align: left;
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.required-asterisk {
+  color: #e53e3e;
+  margin-left: 0.25rem;
+}
+
+.validated-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.validated-input:focus {
+  outline: none;
+  border-color: #0088cc;
+  box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+}
+
+.validated-input.has-error {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.validated-input.is-valid {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.error-message {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 4px;
+  color: #c53030;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-message::before {
+  content: "⚠";
+  color: #e53e3e;
+  font-weight: bold;
+}
+
+/* Estilos para el indicador de fortaleza de contraseña */
+.password-strength {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f7fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.strength-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.strength-bar .strength-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  width: 0%;
+}
+
+.strength-bar.strength-weak .strength-fill {
+  width: 33%;
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.strength-bar.strength-medium .strength-fill {
+  width: 66%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.strength-bar.strength-strong .strength-fill {
+  width: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.strength-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  color: #4a5568;
+}
+
+/* Animaciones para feedback visual */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.validated-input.shake {
+  animation: shake 0.5s ease-in-out;
 }
 
 /* Estilos para la página Acerca de */

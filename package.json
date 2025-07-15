@@ -8,7 +8,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "hash-passwords": "tsx scripts/hash-existing-passwords.ts"
+    "hash-passwords": "tsx scripts/hash-existing-passwords.ts",
+    "test-email": "tsx scripts/test-email.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -23,6 +24,7 @@
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.1.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^6.4.17",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
@@ -30,6 +32,7 @@
     "dotenv": "^17.2.0",
     "drizzle-orm": "^0.44.3",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.5",
     "solid-js": "^1.9.5",
     "vinxi": "^0.5.7"
   },
