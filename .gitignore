@@ -1,3 +1,4 @@
+# Build outputs
 dist
 .wrangler
 .output
@@ -6,23 +7,69 @@ dist
 .vinxi
 app.config.timestamp_*.js
 
-# Environment
+# Environment variables
 .env
 .env*.local
 
-# dependencies
+# Dependencies
 /node_modules
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # IDEs and editors
 /.idea
+/.vscode
 .project
 .classpath
 *.launch
 .settings/
+*.swp
+*.swo
+*~
 
-# Temp
-gitignore
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+.temp/
 
 # System Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Test files (if we add them later)
+test-*.js
+test-*.ts
+*.test.js
+*.test.ts
+
+# Data folders
+.data/
