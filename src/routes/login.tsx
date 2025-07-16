@@ -74,7 +74,7 @@ export default function Login(props: RouteSectionProps) {
           id="username"
           name="username"
           type="text"
-          placeholder="Ingresa tu usuario"
+          placeholder={isRegister() ? "Ingresa tu usuario" : "Usuario o email"}
           value={formValidation.formData().username}
           error={formValidation.errors().username}
           showError={formValidation.shouldShowError("username")}

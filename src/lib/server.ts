@@ -123,7 +123,7 @@ export async function requestPasswordReset(email: string) {
     const user = await db.user.findUnique({ where: { email } });
     if (!user) {
       // Por seguridad, no revelamos si el email existe o no
-      return { success: true, message: "Si el email existe, recibirás un enlace de recuperación" };
+      return { success: true, message: "Si el email existe, recibirás un enlace de recuperación en tu bandeja de entrada" };
     }
 
     const token = generateResetToken();
@@ -137,22 +137,18 @@ export async function requestPasswordReset(email: string) {
     
     if (emailSent) {
       console.log(`Password reset email sent to ${email}`);
+      return { 
+        success: true, 
+        message: "Se ha enviado un enlace de recuperación a tu correo electrónico. Revisa tu bandeja de entrada y carpeta de spam."
+      };
     } else {
       console.warn(`Failed to send password reset email to ${email}`);
+      // Aún así devolvemos éxito para no revelar si el email existe
+      return { 
+        success: true, 
+        message: "Si el email existe, recibirás un enlace de recuperación en tu bandeja de entrada"
+      };
     }
-
-    // En modo desarrollo, incluir el enlace en la respuesta
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const appUrl = process.env.APP_URL || 'http://localhost:3000';
-    
-    return { 
-      success: true, 
-      message: "Si el email existe, recibirás un enlace de recuperación",
-      ...(isDevelopment && { 
-        developmentLink: `${appUrl}/reset-password?token=${token}`,
-        developmentMessage: "Modo desarrollo: Usa el enlace de abajo para restablecer la contraseña"
-      })
-    };
   } catch (error) {
     console.error("Error requesting password reset:", error);
     throw new Error("Error al procesar la solicitud de recuperación");

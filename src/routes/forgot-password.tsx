@@ -24,19 +24,6 @@ export default function ForgotPassword() {
               <h2>¡Solicitud enviada!</h2>
               <p>{submitting.result && typeof submitting.result === 'object' && 'message' in submitting.result ? submitting.result.message : ''}</p>
               
-              <Show when={submitting.result && typeof submitting.result === 'object' && 'developmentLink' in submitting.result}>
-                <div class="development-link">
-                  <h3>🔧 Modo Desarrollo</h3>
-                  <p>{submitting.result && typeof submitting.result === 'object' && 'developmentMessage' in submitting.result ? submitting.result.developmentMessage : ''}</p>
-                  <a 
-                    href={submitting.result && typeof submitting.result === 'object' && 'developmentLink' in submitting.result ? submitting.result.developmentLink : '#'} 
-                    class="development-button"
-                  >
-                    🔗 Ir al enlace de recuperación
-                  </a>
-                </div>
-              </Show>
-              
               <div class="back-to-login">
                 <a href="/login" class="back-link">Volver al inicio de sesión</a>
               </div>

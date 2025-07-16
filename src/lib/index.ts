@@ -54,12 +54,20 @@ export const loginOrRegister = action(async (formData: FormData) => {
       }
     }
     
-    let error = validateUsername(username) || validatePassword(password);
+    let error = validatePassword(password);
+    
     if (loginType === "register") {
-      error = error || validateEmail(email);
+      // En registro, validar username y email por separado
+      error = error || validateUsername(username) || validateEmail(email);
       // Validar confirmación de contraseña en registro
       if (password !== confirmPassword) {
         error = error || "Las contraseñas no coinciden";
+      }
+    } else {
+      // En login, el campo username puede ser email o username
+      // Solo validar que no esté vacío y que sea un formato válido
+      if (!username || username.trim().length === 0) {
+        error = error || "El usuario o email es requerido";
       }
     }
     if (error) return new Error(error);

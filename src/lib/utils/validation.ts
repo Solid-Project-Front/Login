@@ -22,7 +22,8 @@ export const ValidationRules = {
     maxLength: 100
   },
   email: {
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    pattern: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
+    maxLength: 254
   }
 };
 
@@ -49,6 +50,10 @@ export function validateUsername(username: string): ValidationResult {
 export function validateEmail(email: string): ValidationResult {
   if (!email) {
     return { isValid: false, message: "El email es requerido" };
+  }
+  
+  if (email.length > ValidationRules.email.maxLength) {
+    return { isValid: false, message: `El email no puede tener más de ${ValidationRules.email.maxLength} caracteres` };
   }
   
   if (!ValidationRules.email.pattern.test(email)) {
@@ -107,9 +112,17 @@ export function validateForm(formData: {
 }): FormErrors {
   const errors: FormErrors = {};
   
-  const usernameResult = validateUsername(formData.username);
-  if (!usernameResult.isValid) {
-    errors.username = usernameResult.message;
+  // Solo validar username en modo registro
+  if (formData.isRegister) {
+    const usernameResult = validateUsername(formData.username);
+    if (!usernameResult.isValid) {
+      errors.username = usernameResult.message;
+    }
+  } else {
+    // En modo login, solo verificar que el campo no esté vacío
+    if (!formData.username || formData.username.trim().length === 0) {
+      errors.username = "El usuario o email es requerido";
+    }
   }
   
   if (formData.isRegister && formData.email) {

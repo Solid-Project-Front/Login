@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 // Configuración del transportador de email
 const createTransporter = () => {
@@ -8,8 +8,25 @@ const createTransporter = () => {
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
 
+  // Verificar si las variables están configuradas
   if (!emailHost || !emailPort || !emailUser || !emailPass) {
-    console.warn('Email configuration not found. Emails will be logged to console.');
+    console.warn(
+      "Email configuration not found. Emails will be logged to console."
+    );
+    return null;
+  }
+
+  // Verificar si son valores de ejemplo/placeholder
+  const isPlaceholder =
+    emailUser.includes("tu_email@") ||
+    emailUser === "tu_email@gmail.com" ||
+    emailPass === "tu_password_de_aplicacion" ||
+    emailPass.includes("tu_password");
+
+  if (isPlaceholder) {
+    console.warn(
+      "Email configuration contains placeholder values. Emails will be logged to console."
+    );
     return null;
   }
 
@@ -22,15 +39,15 @@ const createTransporter = () => {
       pass: emailPass,
     },
     tls: {
-      rejectUnauthorized: false // Para desarrollo local
-    }
+      rejectUnauthorized: false,
+    },
   });
 };
 
 // Plantilla de email para recuperación de contraseña
 const getPasswordResetEmailTemplate = (username: string, resetUrl: string) => {
   return {
-    subject: 'Recuperación de Contraseña - Red Coop Central',
+    subject: "Recuperación de Contraseña - Red Coop Central",
     html: `
       <!DOCTYPE html>
       <html lang="es">
@@ -152,54 +169,86 @@ El equipo de Red Coop Central
 ---
 Este es un email automático, por favor no respondas a este mensaje.
 © 2024 Red Coop Central. Todos los derechos reservados.
-    `
+    `,
   };
 };
 
 // Función principal para enviar email de recuperación de contraseña
-export async function sendPasswordResetEmail(email: string, username: string, token: string): Promise<boolean> {
+export async function sendPasswordResetEmail(
+  email: string,
+  username: string,
+  token: string
+): Promise<boolean> {
   try {
     const transporter = createTransporter();
-    
-    // Si no hay configuración de email, solo loguear (modo desarrollo)
+
+    // Si no hay configuración de email, solo loguear
     if (!transporter) {
-      const appUrl = process.env.APP_URL || 'http://localhost:3000';
+      const appUrl = process.env.APP_URL || "http://localhost:3000";
       const resetUrl = `${appUrl}/reset-password?token=${token}`;
-      
-      console.log('\n=== EMAIL DE RECUPERACIÓN DE CONTRASEÑA ===');
+
+      console.log("\n=== EMAIL DE RECUPERACIÓN DE CONTRASEÑA ===");
       console.log(`Para: ${email}`);
       console.log(`Usuario: ${username}`);
       console.log(`Token: ${token}`);
       console.log(`URL de recuperación: ${resetUrl}`);
-      console.log('==========================================\n');
-      
+      console.log("==========================================\n");
+
       return true;
     }
 
     // Construir URL de recuperación
-    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.APP_URL || "http://localhost:3000";
     const resetUrl = `${appUrl}/reset-password?token=${token}`;
-    
+
     // Obtener plantilla de email
     const emailTemplate = getPasswordResetEmailTemplate(username, resetUrl);
-    
+
     // Configurar opciones del email
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'Red Coop Central <noreply@redcoopcentral.com>',
+      from:
+        process.env.EMAIL_FROM ||
+        "Red Coop Central <noreply@redcoopcentral.com>",
       to: email,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
-      text: emailTemplate.text
+      text: emailTemplate.text,
     };
 
     // Enviar email
     const info = await transporter.sendMail(mailOptions);
-    
-    console.log('Email de recuperación enviado:', info.messageId);
+
+    console.log("Email de recuperación enviado:", info.messageId);
     return true;
-    
-  } catch (error) {
-    console.error('Error enviando email de recuperación:', error);
+  } catch (error: any) {
+    // Manejar diferentes tipos de errores
+    if (error.code === "EAUTH") {
+      console.error("❌ Error de autenticación de email:");
+      console.error("   - Verifica que el email y contraseña sean correctos");
+      console.error('   - Para Gmail, usa una "Contraseña de aplicación"');
+      console.error("   - Habilita autenticación de 2 factores primero");
+      console.error("   - Ve a: https://myaccount.google.com/apppasswords");
+      console.warn("   🔄 Cambiando a modo desarrollo...");
+
+      // En caso de error de autenticación, funcionar como modo desarrollo
+      const appUrl = process.env.APP_URL || "http://localhost:3000";
+      const resetUrl = `${appUrl}/reset-password?token=${token}`;
+
+      console.log(
+        "\n=== EMAIL DE RECUPERACIÓN DE CONTRASEÑA (MODO DESARROLLO) ==="
+      );
+      console.log(`Para: ${email}`);
+      console.log(`Usuario: ${username}`);
+      console.log(`Token: ${token}`);
+      console.log(`URL de recuperación: ${resetUrl}`);
+      console.log(
+        "============================================================\n"
+      );
+
+      return true; // Devolver éxito para no interrumpir el flujo
+    }
+
+    console.error("Error enviando email de recuperación:", error);
     return false;
   }
 }
@@ -218,18 +267,17 @@ export function isEmailConfigured(): boolean {
 export async function testEmailConfiguration(): Promise<boolean> {
   try {
     const transporter = createTransporter();
-    
+
     if (!transporter) {
-      console.log('Email no configurado - funcionando en modo desarrollo');
+      console.log("Email no configurado - funcionando en modo desarrollo");
       return true;
     }
 
     await transporter.verify();
-    console.log('Configuración de email verificada correctamente');
+    console.log("Configuración de email verificada correctamente");
     return true;
-    
   } catch (error) {
-    console.error('Error en la configuración de email:', error);
+    console.error("Error en la configuración de email:", error);
     return false;
   }
 }
