@@ -15,6 +15,13 @@
       "when": 1752612325193,
       "tag": "0001_glossy_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1752667853151,
+      "tag": "0002_overjoyed_alice",
+      "breakpoints": true
     }
   ]
 }

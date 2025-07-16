@@ -102,7 +102,9 @@ export async function isAuthenticated() {
     return session.data.userId !== undefined;
   } catch (error) {
     console.error("Error checking authentication:", error);
-    return false;
+    // En caso de error del servidor, es más seguro requerir re-autenticación
+    // que asumir que el usuario no está autenticado
+    throw error;
   }
 }
 

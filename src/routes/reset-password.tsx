@@ -1,11 +1,15 @@
 import { useSubmission, useSearchParams } from "@solidjs/router";
 import { Show, createSignal, onMount } from "solid-js";
 import { resetPasswordAction } from "~/lib";
+import { validatePassword, validateConfirmPassword } from "~/lib/utils/validation";
 
 export default function ResetPassword() {
   const submitting = useSubmission(resetPasswordAction);
   const [searchParams] = useSearchParams();
   const [token, setToken] = createSignal("");
+  const [password, setPassword] = createSignal("");
+  const [confirmPassword, setConfirmPassword] = createSignal("");
+  const [errors, setErrors] = createSignal({ password: "", confirmPassword: "" });
 
   onMount(() => {
     const urlToken = searchParams.token;
@@ -13,6 +17,18 @@ export default function ResetPassword() {
       setToken(urlToken);
     }
   });
+
+  const handlePasswordInput = (value: string) => {
+    setPassword(value);
+    const validation = validatePassword(value);
+    setErrors(prev => ({ ...prev, password: validation.isValid ? "" : validation.message || "" }));
+  };
+
+  const handleConfirmPasswordInput = (value: string) => {
+    setConfirmPassword(value);
+    const validation = validateConfirmPassword(password(), value);
+    setErrors(prev => ({ ...prev, confirmPassword: validation.isValid ? "" : validation.message || "" }));
+  };
 
   return (
     <main>
@@ -47,9 +63,17 @@ export default function ResetPassword() {
                 name="password"
                 type="password"
                 placeholder="Nueva contraseña"
+                value={password()}
                 required={true}
                 disabled={submitting.pending}
+                onInput={(e) => handlePasswordInput(e.currentTarget.value)}
+                class={errors().password ? "validated-input has-error" : "validated-input"}
               />
+              <Show when={errors().password}>
+                <div class="error-message" role="alert">
+                  {errors().password}
+                </div>
+              </Show>
             </div>
 
             <div>
@@ -59,9 +83,17 @@ export default function ResetPassword() {
                 name="confirmPassword"
                 type="password"
                 placeholder="Confirmar nueva contraseña"
+                value={confirmPassword()}
                 required={true}
                 disabled={submitting.pending}
+                onInput={(e) => handleConfirmPasswordInput(e.currentTarget.value)}
+                class={errors().confirmPassword ? "validated-input has-error" : "validated-input"}
               />
+              <Show when={errors().confirmPassword}>
+                <div class="error-message" role="alert">
+                  {errors().confirmPassword}
+                </div>
+              </Show>
             </div>
 
             <button 

@@ -26,7 +26,7 @@ export const users = sqliteTable("users", {
   resetTokenExpiry: text("reset_token_expiry"),
   createdAt: text("created_at")
     .notNull()
-    .default(sql`datetime('now')`),
+    .default(sql`(datetime('now'))`),
 });
 
 // Clase principal de la base de datos SQLite

@@ -5,6 +5,8 @@ import {
 } from "@solidjs/router";
 import { Show, createSignal } from "solid-js";
 import { loginOrRegister } from "~/lib";
+import { useFormValidation } from "~/lib/hooks/useFormValidation";
+import { ValidatedInput } from "~/components/ValidatedInput";
 
 export default function Login(props: RouteSectionProps) {
   const loggingIn = useSubmission(loginOrRegister);
@@ -12,6 +14,7 @@ export default function Login(props: RouteSectionProps) {
   const [loginType, setLoginType] = createSignal("login");
 
   const isRegister = () => loginType() === "register";
+  const formValidation = useFormValidation(isRegister);
 
   const successMessage = () => {
     if (searchParams.message === "password-reset-success") {
@@ -67,56 +70,64 @@ export default function Login(props: RouteSectionProps) {
           </label>
         </fieldset>
 
-        <div>
-          <label for="username">Usuario</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            placeholder="Ingresa tu usuario"
-            required
-            disabled={loggingIn.pending}
-          />
-        </div>
+        <ValidatedInput
+          id="username"
+          name="username"
+          type="text"
+          placeholder="Ingresa tu usuario"
+          value={formValidation.formData().username}
+          error={formValidation.errors().username}
+          showError={formValidation.shouldShowError("username")}
+          required={true}
+          disabled={loggingIn.pending}
+          onInput={(value) => formValidation.updateField("username", value)}
+          onBlur={() => formValidation.markFieldAsTouched("username")}
+        />
 
         <Show when={isRegister()}>
-          <div>
-            <label for="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="Ingresa tu email"
-              required
-              disabled={loggingIn.pending}
-            />
-          </div>
+          <ValidatedInput
+            id="email"
+            name="email"
+            type="email"
+            placeholder="Ingresa tu email"
+            value={formValidation.formData().email}
+            error={formValidation.errors().email}
+            showError={formValidation.shouldShowError("email")}
+            required={true}
+            disabled={loggingIn.pending}
+            onInput={(value) => formValidation.updateField("email", value)}
+            onBlur={() => formValidation.markFieldAsTouched("email")}
+          />
         </Show>
 
-        <div>
-          <label for="password">Contraseña</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Ingresa tu contraseña"
-            required
-            disabled={loggingIn.pending}
-          />
-        </div>
+        <ValidatedInput
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Ingresa tu contraseña"
+          value={formValidation.formData().password}
+          error={formValidation.errors().password}
+          showError={formValidation.shouldShowError("password")}
+          required={true}
+          disabled={loggingIn.pending}
+          onInput={(value) => formValidation.updateField("password", value)}
+          onBlur={() => formValidation.markFieldAsTouched("password")}
+        />
 
         <Show when={isRegister()}>
-          <div>
-            <label for="confirmPassword">Confirmar contraseña</label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirma tu contraseña"
-              required
-              disabled={loggingIn.pending}
-            />
-          </div>
+          <ValidatedInput
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirma tu contraseña"
+            value={formValidation.formData().confirmPassword}
+            error={formValidation.errors().confirmPassword}
+            showError={formValidation.shouldShowError("confirmPassword")}
+            required={true}
+            disabled={loggingIn.pending}
+            onInput={(value) => formValidation.updateField("confirmPassword", value)}
+            onBlur={() => formValidation.markFieldAsTouched("confirmPassword")}
+          />
         </Show>
 
         <button type="submit" class="login-button" disabled={loggingIn.pending}>

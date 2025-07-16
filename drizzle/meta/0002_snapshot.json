@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "95ad1246-5fac-4248-b3fd-dd7a493acfb4",
-  "prevId": "1844fa6d-718b-4c53-a670-c854f282da2d",
+  "id": "01382326-4a30-4c53-b941-02b706bbc197",
+  "prevId": "c9a794f7-59e6-4508-9955-3e4012680aa6",
   "tables": {
     "users": {
       "name": "users",
@@ -21,6 +21,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "password": {
           "name": "password",
           "type": "text",
@@ -28,13 +35,27 @@
           "notNull": true,
           "autoincrement": false
         },
+        "reset_token": {
+          "name": "reset_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reset_token_expiry": {
+          "name": "reset_token_expiry",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'\"2025-07-14T19:26:46.397Z\"'"
+          "default": "datetime('now')"
         }
       },
       "indexes": {
@@ -42,6 +63,13 @@
           "name": "users_username_unique",
           "columns": [
             "username"
+          ],
+          "isUnique": true
+        },
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "columns": [
+            "email"
           ],
           "isUnique": true
         }

@@ -8,6 +8,7 @@ export async function requireAuth() {
       return redirect("/login");
     }
   } catch (error) {
+    console.error("Authentication check failed:", error);
     return redirect("/login");
   }
 }

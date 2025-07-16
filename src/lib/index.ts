@@ -11,6 +11,7 @@ import {
   requestPasswordReset,
   resetPassword
 } from "./server";
+import { loginRateLimiter, passwordResetRateLimiter } from "./utils/rate-limiter";
 
 export const getUser = query(async (_, { request }) => {
   "use server";
@@ -39,28 +40,61 @@ export const loginOrRegister = action(async (formData: FormData) => {
     const username = String(formData.get("username"));
     const email = String(formData.get("email"));
     const password = String(formData.get("password"));
+    const confirmPassword = String(formData.get("confirmPassword"));
     const loginType = String(formData.get("loginType"));
+    
+    // Para login, verificar rate limiting
+    if (loginType === "login") {
+      const identifier = username.toLowerCase(); // Usar username como identificador
+      
+      if (loginRateLimiter.isBlocked(identifier)) {
+        const blockedUntil = loginRateLimiter.getBlockedUntil(identifier);
+        const minutes = blockedUntil ? Math.ceil((blockedUntil.getTime() - Date.now()) / (1000 * 60)) : 30;
+        return new Error(`Demasiados intentos fallidos. Intenta de nuevo en ${minutes} minutos.`);
+      }
+    }
     
     let error = validateUsername(username) || validatePassword(password);
     if (loginType === "register") {
       error = error || validateEmail(email);
+      // Validar confirmación de contraseña en registro
+      if (password !== confirmPassword) {
+        error = error || "Las contraseñas no coinciden";
+      }
     }
     if (error) return new Error(error);
 
-    const user = await (loginType === "register"
-      ? register(username, email, password)
-      : login(username, password));
-    
-    const session = await getSession();
-    await session.update((data) => {
-      data.userId = user.id;
-      data.username = user.username;
-      data.lastLogin = new Date().toISOString();
-      return data;
-    });
+    try {
+      const user = await (loginType === "register"
+        ? register(username, email, password)
+        : login(username, password));
+      
+      // Si el login fue exitoso, registrar el éxito en el rate limiter
+      if (loginType === "login") {
+        loginRateLimiter.recordAttempt(username.toLowerCase(), true);
+      }
+      
+      const session = await getSession();
+      await session.update((data) => {
+        data.userId = user.id;
+        data.username = user.username;
+        data.lastLogin = new Date().toISOString();
+        return data;
+      });
 
-    const redirectTo = formData.get("redirectTo")?.toString() || "/";
-    return redirect(redirectTo);
+      const redirectTo = formData.get("redirectTo")?.toString() || "/";
+      return redirect(redirectTo);
+    } catch (authError) {
+      // Si el login falló, registrar el intento fallido
+      if (loginType === "login") {
+        loginRateLimiter.recordAttempt(username.toLowerCase(), false);
+        const remaining = loginRateLimiter.getRemainingAttempts(username.toLowerCase());
+        if (remaining > 0) {
+          return new Error(`Credenciales incorrectas. Te quedan ${remaining} intentos.`);
+        }
+      }
+      throw authError;
+    }
   } catch (error) {
     console.error("Error in loginOrRegister:", error);
     return error instanceof Error ? error : new Error("Error en el proceso de login/registro");
@@ -86,6 +120,18 @@ export const forgotPassword = action(async (formData: FormData) => {
     const emailError = validateEmail(email);
     if (emailError) return new Error(emailError);
 
+    // Verificar rate limiting para recuperación de contraseña
+    const identifier = email.toLowerCase();
+    
+    if (passwordResetRateLimiter.isBlocked(identifier)) {
+      const blockedUntil = passwordResetRateLimiter.getBlockedUntil(identifier);
+      const minutes = blockedUntil ? Math.ceil((blockedUntil.getTime() - Date.now()) / (1000 * 60)) : 60;
+      return new Error(`Demasiadas solicitudes de recuperación. Intenta de nuevo en ${minutes} minutos.`);
+    }
+
+    // Registrar el intento (siempre como "fallido" para no revelar si el email existe)
+    passwordResetRateLimiter.recordAttempt(identifier, false);
+
     const result = await requestPasswordReset(email);
     return result;
   } catch (error) {
@@ -99,9 +145,15 @@ export const resetPasswordAction = action(async (formData: FormData) => {
   try {
     const token = String(formData.get("token"));
     const password = String(formData.get("password"));
+    const confirmPassword = String(formData.get("confirmPassword"));
     
     const passwordError = validatePassword(password);
     if (passwordError) return new Error(passwordError);
+
+    // Validar que las contraseñas coincidan
+    if (password !== confirmPassword) {
+      return new Error("Las contraseñas no coinciden");
+    }
 
     const result = await resetPassword(token, password);
     if (result.success) {
