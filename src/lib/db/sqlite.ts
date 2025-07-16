@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { eq, sql } from "drizzle-orm";
+import { APP_CONFIG } from '../constants/config';
 
 // Definición de tipos
 export interface User {
@@ -31,22 +32,12 @@ export const users = sqliteTable("users", {
 
 // Clase principal de la base de datos SQLite
 export class SQLiteDatabase {
-  private static instance: SQLiteDatabase;
   private db: ReturnType<typeof drizzle>;
   private sqlite: Database.Database;
 
-  // Constructor privado - no permite crear instancias directamente
-  private constructor() {
-    this.sqlite = new Database("sqlite.db");
+  constructor() {
+    this.sqlite = new Database(APP_CONFIG.DATABASE.FILE_PATH);
     this.db = drizzle(this.sqlite);
-  }
-
-  // Método público para obtener la instancia
-  public static getInstance(): SQLiteDatabase {
-    if (!SQLiteDatabase.instance) {
-      SQLiteDatabase.instance = new SQLiteDatabase();
-    }
-    return SQLiteDatabase.instance;
   }
 
   public async createUser(data: NewUser): Promise<User> {
@@ -135,7 +126,7 @@ export class SQLiteDatabase {
 
   public async setResetToken(email: string, token: string, expiry: Date): Promise<void> {
     try {
-      await this.db
+      const result = this.db
         .update(users)
         .set({
           resetToken: token,
@@ -143,6 +134,10 @@ export class SQLiteDatabase {
         })
         .where(eq(users.email, email))
         .run();
+      
+      if (result.changes === 0) {
+        throw new Error("User not found");
+      }
     } catch (error) {
       console.error("Error setting reset token:", error);
       throw new Error("Could not set reset token");
@@ -195,16 +190,36 @@ export class SQLiteDatabase {
     }
   }
 
-  public async updatePassword(userId: number, newPassword: string): Promise<void> {
-    try {
-      await this.db
+  // Método para actualizar contraseña y limpiar token en una transacción
+  public async resetUserPassword(userId: number, newPassword: string): Promise<void> {
+    const transaction = this.sqlite.transaction(() => {
+      // Actualizar contraseña
+      const passwordResult = this.db
         .update(users)
         .set({ password: newPassword })
         .where(eq(users.id, userId))
         .run();
+      
+      if (passwordResult.changes === 0) {
+        throw new Error("User not found");
+      }
+
+      // Limpiar token de reset
+      this.db
+        .update(users)
+        .set({
+          resetToken: null,
+          resetTokenExpiry: null
+        })
+        .where(eq(users.id, userId))
+        .run();
+    });
+
+    try {
+      transaction();
     } catch (error) {
-      console.error("Error updating password:", error);
-      throw new Error("Could not update password");
+      console.error("Error resetting user password:", error);
+      throw new Error("Could not reset password");
     }
   }
 

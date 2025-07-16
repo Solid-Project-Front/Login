@@ -1,4 +1,5 @@
 import { JSX, Show } from "solid-js";
+import { PasswordStrength } from "./PasswordStrength";
 
 interface ValidatedInputProps {
   id: string;
@@ -13,6 +14,7 @@ interface ValidatedInputProps {
   onInput: (value: string) => void;
   onBlur: () => void;
   class?: string;
+  showPasswordStrength?: boolean;
 }
 
 export function ValidatedInput(props: ValidatedInputProps) {
@@ -23,6 +25,10 @@ export function ValidatedInput(props: ValidatedInputProps) {
   const handleBlur: JSX.EventHandler<HTMLInputElement, FocusEvent> = () => {
     props.onBlur();
   };
+
+  const isPasswordField = () => props.type === "password" && props.showPasswordStrength;
+  const hasError = () => props.showError && props.error;
+  const isValid = () => !props.error && props.value.length > 0;
 
   return (
     <div class="input-group">
@@ -40,12 +46,15 @@ export function ValidatedInput(props: ValidatedInputProps) {
         disabled={props.disabled}
         onInput={handleInput}
         onBlur={handleBlur}
-        class={`validated-input ${props.showError ? 'error' : ''} ${props.class || ''}`}
+        class={`validated-input ${props.class || ''}`}
         classList={{
-          'has-error': props.showError,
-          'is-valid': !props.error && props.value.length > 0
+          'has-error': hasError(),
+          'is-valid': isValid()
         }}
       />
+      <Show when={isPasswordField() && props.value.length > 0}>
+        <PasswordStrength password={props.value} />
+      </Show>
       <Show when={props.showError && props.error}>
         <div class="error-message" role="alert">
           {props.error}

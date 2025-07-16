@@ -1,7 +1,7 @@
 import { SQLiteDatabase } from './sqlite';
 
-// Instancia única de la base de datos
-const sqliteDb = SQLiteDatabase.getInstance();
+// Instancia de la base de datos
+const sqliteDb = new SQLiteDatabase();
 
 // Interfaz pública de la base de datos
 export const db = {
@@ -18,6 +18,15 @@ export const db = {
         return sqliteDb.findUserById(where.id);
       }
       return null;
+    },
+    async findByUsername(username: string) {
+      return sqliteDb.findUserByUsername(username);
+    },
+    async findByEmail(email: string) {
+      return sqliteDb.findUserByEmail(email);
+    },
+    async findById(id: number) {
+      return sqliteDb.findUserById(id);
     },
     async findAll() {
       return sqliteDb.getAllUsers();
@@ -37,8 +46,8 @@ export const db = {
     async clearResetToken(userId: number) {
       return sqliteDb.clearResetToken(userId);
     },
-    async updatePassword(userId: number, newPassword: string) {
-      return sqliteDb.updatePassword(userId, newPassword);
+    async resetUserPassword(userId: number, newPassword: string) {
+      return sqliteDb.resetUserPassword(userId, newPassword);
     }
   }
 };

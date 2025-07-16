@@ -7,6 +7,7 @@ import { Show, createSignal } from "solid-js";
 import { loginOrRegister } from "~/lib";
 import { useFormValidation } from "~/lib/hooks/useFormValidation";
 import { ValidatedInput } from "~/components/ValidatedInput";
+import { SUCCESS_MESSAGES } from "~/lib/constants/messages";
 
 export default function Login(props: RouteSectionProps) {
   const loggingIn = useSubmission(loginOrRegister);
@@ -18,7 +19,7 @@ export default function Login(props: RouteSectionProps) {
 
   const successMessage = () => {
     if (searchParams.message === "password-reset-success") {
-      return "Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión.";
+      return SUCCESS_MESSAGES.PASSWORD_RESET_SUCCESS;
     }
     return null;
   };
@@ -112,6 +113,7 @@ export default function Login(props: RouteSectionProps) {
           disabled={loggingIn.pending}
           onInput={(value) => formValidation.updateField("password", value)}
           onBlur={() => formValidation.markFieldAsTouched("password")}
+          showPasswordStrength={isRegister()}
         />
 
         <Show when={isRegister()}>
@@ -128,6 +130,20 @@ export default function Login(props: RouteSectionProps) {
             onInput={(value) => formValidation.updateField("confirmPassword", value)}
             onBlur={() => formValidation.markFieldAsTouched("confirmPassword")}
           />
+        </Show>
+
+        <Show when={loginType() === "login"}>
+          <div class="remember-me-container">
+            <label class="remember-me-label">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                class="remember-me-checkbox"
+                disabled={loggingIn.pending}
+              />
+              <span class="remember-me-text">Recordarme (mantener sesión por 30 días)</span>
+            </label>
+          </div>
         </Show>
 
         <button type="submit" class="login-button" disabled={loggingIn.pending}>

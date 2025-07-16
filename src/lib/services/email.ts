@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { APP_CONFIG, getOptionalEnvVar } from '../constants/config';
 
 // Configuración del transportador de email
 const createTransporter = () => {
@@ -124,7 +125,7 @@ const getPasswordResetEmailTemplate = (username: string, resetUrl: string) => {
           <div class="warning">
             <strong>⚠️ Importante:</strong>
             <ul>
-              <li>Este enlace es válido por <strong>1 hora</strong></li>
+              <li>Este enlace es válido por <strong>${APP_CONFIG.TOKEN.RESET_PASSWORD_EXPIRY_HOURS} hora${APP_CONFIG.TOKEN.RESET_PASSWORD_EXPIRY_HOURS > 1 ? 's' : ''}</strong></li>
               <li>Si no solicitaste este cambio, puedes ignorar este email</li>
               <li>Tu contraseña actual seguirá siendo válida hasta que la cambies</li>
             </ul>
@@ -157,7 +158,7 @@ Para restablecer tu contraseña, visita el siguiente enlace:
 ${resetUrl}
 
 IMPORTANTE:
-- Este enlace es válido por 1 hora
+- Este enlace es válido por ${APP_CONFIG.TOKEN.RESET_PASSWORD_EXPIRY_HOURS} hora${APP_CONFIG.TOKEN.RESET_PASSWORD_EXPIRY_HOURS > 1 ? 's' : ''}
 - Si no solicitaste este cambio, puedes ignorar este email
 - Tu contraseña actual seguirá siendo válida hasta que la cambies
 
@@ -184,7 +185,7 @@ export async function sendPasswordResetEmail(
 
     // Si no hay configuración de email, solo loguear
     if (!transporter) {
-      const appUrl = process.env.APP_URL || "http://localhost:3000";
+      const appUrl = getOptionalEnvVar("APP_URL", APP_CONFIG.URLS.DEFAULT_APP_URL);
       const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
       console.log("\n=== EMAIL DE RECUPERACIÓN DE CONTRASEÑA ===");
@@ -198,7 +199,7 @@ export async function sendPasswordResetEmail(
     }
 
     // Construir URL de recuperación
-    const appUrl = process.env.APP_URL || "http://localhost:3000";
+    const appUrl = getOptionalEnvVar("APP_URL", APP_CONFIG.URLS.DEFAULT_APP_URL);
     const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
     // Obtener plantilla de email
@@ -206,9 +207,7 @@ export async function sendPasswordResetEmail(
 
     // Configurar opciones del email
     const mailOptions = {
-      from:
-        process.env.EMAIL_FROM ||
-        "Red Coop Central <noreply@redcoopcentral.com>",
+      from: getOptionalEnvVar("EMAIL_FROM", APP_CONFIG.EMAIL.DEFAULT_FROM),
       to: email,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
@@ -231,7 +230,7 @@ export async function sendPasswordResetEmail(
       console.warn("   🔄 Cambiando a modo desarrollo...");
 
       // En caso de error de autenticación, funcionar como modo desarrollo
-      const appUrl = process.env.APP_URL || "http://localhost:3000";
+      const appUrl = getOptionalEnvVar("APP_URL", APP_CONFIG.URLS.DEFAULT_APP_URL);
       const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
       console.log(

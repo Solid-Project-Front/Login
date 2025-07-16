@@ -1,3 +1,5 @@
+import { APP_CONFIG } from '../constants/config';
+
 // Sistema simple de rate limiting en memoria
 // En producción se debería usar Redis o una base de datos
 
@@ -13,30 +15,26 @@ class RateLimiter {
   private readonly windowMs: number;
   private readonly blockDurationMs: number;
 
-  constructor(maxAttempts = 5, windowMs = 15 * 60 * 1000, blockDurationMs = 30 * 60 * 1000) {
+  constructor(maxAttempts: number, windowMs: number, blockDurationMs: number) {
     this.maxAttempts = maxAttempts;
-    this.windowMs = windowMs; // 15 minutos
-    this.blockDurationMs = blockDurationMs; // 30 minutos de bloqueo
+    this.windowMs = windowMs;
+    this.blockDurationMs = blockDurationMs;
   }
 
   isBlocked(identifier: string): boolean {
     const entry = this.attempts.get(identifier);
-    if (!entry) return false;
+    if (!entry?.blockedUntil) return false;
 
     const now = new Date();
     
-    // Si está bloqueado y el bloqueo no ha expirado
-    if (entry.blockedUntil && entry.blockedUntil > now) {
-      return true;
-    }
-
     // Si el bloqueo ha expirado, limpiar la entrada
-    if (entry.blockedUntil && entry.blockedUntil <= now) {
+    if (entry.blockedUntil <= now) {
       this.attempts.delete(identifier);
       return false;
     }
 
-    return false;
+    // Si está bloqueado y el bloqueo no ha expirado
+    return true;
   }
 
   recordAttempt(identifier: string, success: boolean): void {
@@ -95,6 +93,7 @@ class RateLimiter {
     const now = new Date();
     const timeSinceLastAttempt = now.getTime() - entry.lastAttempt.getTime();
     
+    // Si estamos fuera de la ventana de tiempo, reiniciar
     if (timeSinceLastAttempt > this.windowMs) {
       return this.maxAttempts;
     }
@@ -121,9 +120,18 @@ class RateLimiter {
   }
 }
 
-// Instancias globales para diferentes tipos de rate limiting
-export const loginRateLimiter = new RateLimiter(5, 15 * 60 * 1000, 30 * 60 * 1000); // 5 intentos en 15 min, bloqueo 30 min
-export const passwordResetRateLimiter = new RateLimiter(3, 60 * 60 * 1000, 60 * 60 * 1000); // 3 intentos en 1 hora, bloqueo 1 hora
+// Instancias globales para diferentes tipos de rate limiting usando configuración centralizada
+export const loginRateLimiter = new RateLimiter(
+  APP_CONFIG.RATE_LIMIT.LOGIN.MAX_ATTEMPTS,
+  APP_CONFIG.RATE_LIMIT.LOGIN.WINDOW_MS,
+  APP_CONFIG.RATE_LIMIT.LOGIN.BLOCK_DURATION_MS
+);
+
+export const passwordResetRateLimiter = new RateLimiter(
+  APP_CONFIG.RATE_LIMIT.PASSWORD_RESET.MAX_ATTEMPTS,
+  APP_CONFIG.RATE_LIMIT.PASSWORD_RESET.WINDOW_MS,
+  APP_CONFIG.RATE_LIMIT.PASSWORD_RESET.BLOCK_DURATION_MS
+);
 
 // Limpiar entradas expiradas cada 10 minutos
 setInterval(() => {

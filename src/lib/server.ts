@@ -2,46 +2,43 @@ import { useSession } from "vinxi/http";
 import { db } from "./db";
 import { hashPassword, verifyPassword } from './utils/password';
 import { sendPasswordResetEmail } from './services/email';
+import { validateUsername, validateEmail, validatePassword, validatePasswordLogin } from './utils/validation';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from './constants/messages';
+import { APP_CONFIG, getEnvVar } from './constants/config';
 
-// Configuración de la sesión
-const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
-
-import { validateUsername as clientValidateUsername, validateEmail as clientValidateEmail, validatePassword as clientValidatePassword } from './utils/validation';
-
-export function validateUsername(username: unknown) {
-  if (typeof username !== "string") {
-    return "El nombre de usuario debe ser una cadena de texto";
+function validateStringInput(input: unknown, validator: (str: string) => { isValid: boolean; message?: string }, fieldName: string) {
+  if (typeof input !== "string") {
+    return `${fieldName} debe ser una cadena de texto`;
   }
-  const result = clientValidateUsername(username);
+  const result = validator(input);
   return result.isValid ? undefined : result.message;
 }
 
-export function validateEmail(email: unknown) {
-  if (typeof email !== "string") {
-    return "El email debe ser una cadena de texto";
-  }
-  const result = clientValidateEmail(email);
-  return result.isValid ? undefined : result.message;
+export function validateUsernameInput(username: unknown) {
+  return validateStringInput(username, validateUsername, "El nombre de usuario");
 }
 
-export function validatePassword(password: unknown) {
-  if (typeof password !== "string") {
-    return "La contraseña debe ser una cadena de texto";
-  }
-  const result = clientValidatePassword(password);
-  return result.isValid ? undefined : result.message;
+export function validateEmailInput(email: unknown) {
+  return validateStringInput(email, validateEmail, "El email");
+}
+
+export function validatePasswordInput(password: unknown) {
+  return validateStringInput(password, validatePassword, "La contraseña");
+}
+
+export function validatePasswordInputLogin(password: unknown) {
+  return validateStringInput(password, validatePasswordLogin, "La contraseña");
 }
 
 export async function login(identifier: string, password: string) {
   try {
-    let user;
-    if (identifier.includes("@")) {
-      user = await db.user.findUnique({ where: { email: identifier } });
-    } else {
-      user = await db.user.findUnique({ where: { username: identifier } });
-    }
+    // Usar métodos más específicos para mejor legibilidad
+    const user = identifier.includes("@") 
+      ? await db.user.findByEmail(identifier)
+      : await db.user.findByUsername(identifier);
+      
     if (!user || !(await verifyPassword(password, user.password))) {
-      throw new Error("Usuario o contraseña incorrectos");
+      throw new Error(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
     return user;
   } catch (error) {
@@ -63,11 +60,13 @@ export async function logout() {
 
 export async function register(username: string, email: string, password: string) {
   try {
-    const existingUser = await db.user.findUnique({ where: { username } });
-    if (existingUser) throw new Error("El nombre de usuario ya existe");
+    // Verificar si el usuario ya existe
+    const existingUser = await db.user.findByUsername(username);
+    if (existingUser) throw new Error(ERROR_MESSAGES.USERNAME_EXISTS);
     
-    const existingEmail = await db.user.findUnique({ where: { email } });
-    if (existingEmail) throw new Error("El email ya está registrado");
+    // Verificar si el email ya está registrado
+    const existingEmail = await db.user.findByEmail(email);
+    if (existingEmail) throw new Error(ERROR_MESSAGES.EMAIL_EXISTS);
     
     const hashedPassword = await hashPassword(password);
     return db.user.create({
@@ -83,13 +82,20 @@ export async function register(username: string, email: string, password: string
   }
 }
 
-export function getSession() {
+export function getSession(rememberMe: boolean = false) {
   try {
-    return useSession({
-      name: "solid_session",
-      password: process.env.SESSION_SECRET ?? "areallylongsecretthatyoushouldreplace",
-      maxAge: SESSION_EXPIRY
-    });
+    const sessionConfig: any = {
+      name: APP_CONFIG.SESSION.NAME,
+      password: getEnvVar("SESSION_SECRET", APP_CONFIG.SESSION.DEFAULT_SECRET)
+    };
+    
+    // Solo agregar maxAge si el usuario quiere ser recordado
+    if (rememberMe) {
+      sessionConfig.maxAge = APP_CONFIG.SESSION.MAX_AGE_REMEMBER;
+    }
+    // Si no se marca "Recordarme", la sesión será del navegador (sin maxAge)
+    
+    return useSession(sessionConfig);
   } catch (error) {
     console.error("Error getting session:", error);
     throw error;
@@ -109,26 +115,22 @@ export async function isAuthenticated() {
 }
 
 export function generateResetToken(): string {
-  // Generar un token seguro de 32 caracteres
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  // Generar un token criptográficamente seguro
+  const crypto = require('crypto');
+  return crypto.randomBytes(APP_CONFIG.TOKEN.LENGTH).toString('hex');
 }
 
 export async function requestPasswordReset(email: string) {
   try {
-    const user = await db.user.findUnique({ where: { email } });
+    const user = await db.user.findByEmail(email);
     if (!user) {
       // Por seguridad, no revelamos si el email existe o no
-      return { success: true, message: "Si el email existe, recibirás un enlace de recuperación en tu bandeja de entrada" };
+      return { success: true, message: ERROR_MESSAGES.PASSWORD_RESET_ERROR };
     }
 
     const token = generateResetToken();
     const expiry = new Date();
-    expiry.setHours(expiry.getHours() + 1); // Token válido por 1 hora
+    expiry.setHours(expiry.getHours() + APP_CONFIG.TOKEN.RESET_PASSWORD_EXPIRY_HOURS);
 
     await db.user.setResetToken(email, token, expiry);
 
@@ -139,14 +141,14 @@ export async function requestPasswordReset(email: string) {
       console.log(`Password reset email sent to ${email}`);
       return { 
         success: true, 
-        message: "Se ha enviado un enlace de recuperación a tu correo electrónico. Revisa tu bandeja de entrada y carpeta de spam."
+        message: SUCCESS_MESSAGES.PASSWORD_RESET_SENT
       };
     } else {
       console.warn(`Failed to send password reset email to ${email}`);
       // Aún así devolvemos éxito para no revelar si el email existe
       return { 
         success: true, 
-        message: "Si el email existe, recibirás un enlace de recuperación en tu bandeja de entrada"
+        message: SUCCESS_MESSAGES.PASSWORD_RESET_GENERIC
       };
     }
   } catch (error) {
@@ -159,14 +161,14 @@ export async function resetPassword(token: string, newPassword: string) {
   try {
     const user = await db.user.findByResetToken(token);
     if (!user) {
-      throw new Error("Token inválido o expirado");
+      throw new Error(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     const hashedPassword = await hashPassword(newPassword);
-    await db.user.updatePassword(user.id, hashedPassword);
-    await db.user.clearResetToken(user.id);
+    // Usar transacción para actualizar contraseña y limpiar token
+    await db.user.resetUserPassword(user.id, hashedPassword);
 
-    return { success: true, message: "Contraseña actualizada exitosamente" };
+    return { success: true, message: SUCCESS_MESSAGES.PASSWORD_UPDATED };
   } catch (error) {
     console.error("Error resetting password:", error);
     throw error;

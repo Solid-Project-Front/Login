@@ -2,6 +2,7 @@ import { useSubmission, useSearchParams } from "@solidjs/router";
 import { Show, createSignal, onMount } from "solid-js";
 import { resetPasswordAction } from "~/lib";
 import { validatePassword, validateConfirmPassword } from "~/lib/utils/validation";
+import { SUCCESS_MESSAGES } from "~/lib/constants/messages";
 
 export default function ResetPassword() {
   const submitting = useSubmission(resetPasswordAction);

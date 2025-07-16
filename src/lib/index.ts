@@ -5,32 +5,53 @@ import {
   login,
   logout as logoutSession,
   register,
-  validatePassword,
-  validateUsername,
-  validateEmail,
+  validatePasswordInput,
+  validatePasswordInputLogin,
+  validateUsernameInput,
+  validateEmailInput,
   requestPasswordReset,
   resetPassword
 } from "./server";
 import { loginRateLimiter, passwordResetRateLimiter } from "./utils/rate-limiter";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "./constants/messages";
 
-export const getUser = query(async (_, { request }) => {
+export const getUser = query(async () => {
   "use server";
   try {
     const session = await getSession();
     const userId = session.data.userId;
+    const rememberMe = session.data.rememberMe;
+    const lastLogin = session.data.lastLogin;
+    
     if (!userId) {
-      return redirect("/login");
+      return null;
     }
-    const user = await db.user.findUnique({ where: { id: userId } });
+    
+    // Si no hay rememberMe y ha pasado tiempo desde el último login,
+    // verificar si es una sesión "antigua" que debería expirar
+    if (rememberMe !== true && lastLogin) {
+      const loginTime = new Date(lastLogin);
+      const now = new Date();
+      const timeDiff = now.getTime() - loginTime.getTime();
+      
+      // Si han pasado más de 30 minutos sin rememberMe, cerrar sesión
+      // Esto permite usar la app normalmente pero expira sesiones "viejas"
+      if (timeDiff > 30 * 60 * 1000) { // 30 minutos
+        console.log("Cerrando sesión antigua sin rememberMe");
+        await logoutSession();
+        return null;
+      }
+    }
+    
+    const user = await db.user.findById(userId);
     if (!user) {
       await logoutSession();
-      return redirect("/login");
+      return null;
     }
     return { id: user.id, username: user.username, email: user.email };
   } catch (error) {
     console.error("Error getting user:", error);
-    await logoutSession();
-    return redirect("/login");
+    return null;
   }
 }, "user");
 
@@ -42,6 +63,7 @@ export const loginOrRegister = action(async (formData: FormData) => {
     const password = String(formData.get("password"));
     const confirmPassword = String(formData.get("confirmPassword"));
     const loginType = String(formData.get("loginType"));
+    const rememberMe = formData.get("rememberMe") === "on"; // Obtener la opción "Recordarme"
     
     // Para login, verificar rate limiting
     if (loginType === "login") {
@@ -50,24 +72,26 @@ export const loginOrRegister = action(async (formData: FormData) => {
       if (loginRateLimiter.isBlocked(identifier)) {
         const blockedUntil = loginRateLimiter.getBlockedUntil(identifier);
         const minutes = blockedUntil ? Math.ceil((blockedUntil.getTime() - Date.now()) / (1000 * 60)) : 30;
-        return new Error(`Demasiados intentos fallidos. Intenta de nuevo en ${minutes} minutos.`);
+        return new Error(ERROR_MESSAGES.ACCOUNT_BLOCKED(minutes));
       }
     }
     
-    let error = validatePassword(password);
+    // Usar validación de contraseña apropiada según el contexto
+    let error = loginType === "register" 
+      ? validatePasswordInput(password)  // Validación completa para registro
+      : validatePasswordInputLogin(password);  // Validación básica para login
     
     if (loginType === "register") {
       // En registro, validar username y email por separado
-      error = error || validateUsername(username) || validateEmail(email);
+      error = error || validateUsernameInput(username) || validateEmailInput(email);
       // Validar confirmación de contraseña en registro
       if (password !== confirmPassword) {
-        error = error || "Las contraseñas no coinciden";
+        error = error || ERROR_MESSAGES.PASSWORDS_DONT_MATCH;
       }
     } else {
-      // En login, el campo username puede ser email o username
-      // Solo validar que no esté vacío y que sea un formato válido
-      if (!username || username.trim().length === 0) {
-        error = error || "El usuario o email es requerido";
+      // En login, validar que el campo no esté vacío
+      if (!username?.trim()) {
+        error = error || ERROR_MESSAGES.USER_OR_EMAIL_REQUIRED;
       }
     }
     if (error) return new Error(error);
@@ -82,15 +106,17 @@ export const loginOrRegister = action(async (formData: FormData) => {
         loginRateLimiter.recordAttempt(username.toLowerCase(), true);
       }
       
-      const session = await getSession();
+      // Usar la sesión con la duración apropiada según "Recordarme"
+      const session = await getSession(rememberMe);
       await session.update((data) => {
         data.userId = user.id;
         data.username = user.username;
         data.lastLogin = new Date().toISOString();
+        data.rememberMe = rememberMe; // Guardar la preferencia
         return data;
       });
 
-      const redirectTo = formData.get("redirectTo")?.toString() || "/";
+      const redirectTo = formData.get("redirectTo")?.toString() || "/dashboard";
       return redirect(redirectTo);
     } catch (authError) {
       // Si el login falló, registrar el intento fallido
@@ -98,7 +124,7 @@ export const loginOrRegister = action(async (formData: FormData) => {
         loginRateLimiter.recordAttempt(username.toLowerCase(), false);
         const remaining = loginRateLimiter.getRemainingAttempts(username.toLowerCase());
         if (remaining > 0) {
-          return new Error(`Credenciales incorrectas. Te quedan ${remaining} intentos.`);
+          return new Error(ERROR_MESSAGES.TOO_MANY_LOGIN_ATTEMPTS(remaining));
         }
       }
       throw authError;
@@ -113,7 +139,7 @@ export const logout = action(async () => {
   "use server";
   try {
     await logoutSession();
-    return redirect("/login");
+    return redirect("/");
   } catch (error) {
     console.error("Error during logout:", error);
     return new Error("Error al cerrar sesión");
@@ -125,7 +151,7 @@ export const forgotPassword = action(async (formData: FormData) => {
   try {
     const email = String(formData.get("email"));
     
-    const emailError = validateEmail(email);
+    const emailError = validateEmailInput(email);
     if (emailError) return new Error(emailError);
 
     // Verificar rate limiting para recuperación de contraseña
@@ -134,7 +160,7 @@ export const forgotPassword = action(async (formData: FormData) => {
     if (passwordResetRateLimiter.isBlocked(identifier)) {
       const blockedUntil = passwordResetRateLimiter.getBlockedUntil(identifier);
       const minutes = blockedUntil ? Math.ceil((blockedUntil.getTime() - Date.now()) / (1000 * 60)) : 60;
-      return new Error(`Demasiadas solicitudes de recuperación. Intenta de nuevo en ${minutes} minutos.`);
+      return new Error(ERROR_MESSAGES.TOO_MANY_RESET_REQUESTS(minutes));
     }
 
     // Registrar el intento (siempre como "fallido" para no revelar si el email existe)
@@ -155,12 +181,12 @@ export const resetPasswordAction = action(async (formData: FormData) => {
     const password = String(formData.get("password"));
     const confirmPassword = String(formData.get("confirmPassword"));
     
-    const passwordError = validatePassword(password);
+    const passwordError = validatePasswordInput(password);
     if (passwordError) return new Error(passwordError);
 
     // Validar que las contraseñas coincidan
     if (password !== confirmPassword) {
-      return new Error("Las contraseñas no coinciden");
+      return new Error(ERROR_MESSAGES.PASSWORDS_DONT_MATCH);
     }
 
     const result = await resetPassword(token, password);
